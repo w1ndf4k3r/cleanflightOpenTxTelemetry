@@ -33,6 +33,7 @@ local commandDelay = 50
 
 local stickCmd = 0
 local commandTime = 0
+local executeCommand = false
 --do not touch this, flags...
 --will process stick commands, commands will only be called once each time they are detected, see warning above
 local function processStickCommands() 
@@ -43,7 +44,7 @@ local function processStickCommands()
 	local eleStick = getValue('ele') -- elevator input
 	local ailStick = getValue('ail') -- aileron input
 	local yawStick = getValue('rud') -- rudder input
-	
+
 	-- because of lack of native bitwise operators code sucks
 	if(thrStick > maxCommand) then
 		tmpCmd =  tmpCmd + THR_HI
@@ -71,20 +72,20 @@ local function processStickCommands()
 
 	-- reset time if the stick cmd change
 	if (tmpCmd == stickCmd) then
-		if (commandTime < 250) then
-			commandTime = commandTime +1
+		if(commandTime+50 < getTime()) then 
+			if executeCommand then
+				return
+			else
+				executeCommand = true
+			end
 		end
 	else
-		commandTime = 0
+		commandTime = getTime()
 	end
 	stickCmd = tmpCmd;
+	if not executeCommand then return end
 
-		
-	--command exectues only once! (this prevents the function to be called multiple times, this is ok, we do not want to execute multiple commands with a single stick command)
-	if(commandTime ~= commandDelay) then
-		return
-	end
-	
+
 	--process commands (will call the defined function in commands
 	for k,v in pairs(commands) do 	
 		if(v.cmd == stickCmd) then 		
@@ -93,6 +94,7 @@ local function processStickCommands()
 			return
 		end
 	end
+	executeCommand = false
 	return
 end
 
